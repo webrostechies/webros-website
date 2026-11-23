@@ -21,9 +21,10 @@ export default function Seo({ title, description = siteConfig.description, image
 
   useEffect(() => {
     const fullTitle = title ? `${title} | ${siteConfig.name}` : `${siteConfig.name} — Custom Websites, UI/UX, Web Apps & SEO`
-    const origin = siteConfig.url || window.location.origin
-    const url = `${origin}${pathname}`
-    const imageUrl = image.startsWith('http') ? image : `${origin}${image}`
+    // Site root including any sub-folder, e.g. https://webrostechies.github.io/webros-website
+    const root = (siteConfig.url || `${window.location.origin}${import.meta.env.BASE_URL}`).replace(/\/$/, '')
+    const url = `${root}${pathname}`
+    const imageUrl = image.startsWith('http') ? image : `${root}${image}`
 
     document.title = fullTitle
     upsert('meta[name="description"]', { name: 'description', content: description })

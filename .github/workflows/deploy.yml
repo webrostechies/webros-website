@@ -1,0 +1,66 @@
+# Builds the site with Vite and publishes dist/ to GitHub Pages.
+# One-time setup: repo Settings → Pages → Build and deployment → Source: "GitHub Actions".
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # "Run workflow" button on the Actions tab
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          # Served from https://webrostechies.github.io/webros-website/
+          BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
+          # Form delivery: add these under Settings → Secrets and variables → Actions → Variables
+          VITE_FORM_PROVIDER: ${{ vars.VITE_FORM_PROVIDER }}
+          VITE_FORM_ATTACHMENTS: ${{ vars.VITE_FORM_ATTACHMENTS }}
+          VITE_FORMSPREE_CONTACT_ID: ${{ vars.VITE_FORMSPREE_CONTACT_ID }}
+          VITE_FORMSPREE_NEWSLETTER_ID: ${{ vars.VITE_FORMSPREE_NEWSLETTER_ID }}
+          VITE_WEB3FORMS_ACCESS_KEY: ${{ vars.VITE_WEB3FORMS_ACCESS_KEY }}
+          VITE_EMAILJS_SERVICE_ID: ${{ vars.VITE_EMAILJS_SERVICE_ID }}
+          VITE_EMAILJS_CONTACT_TEMPLATE_ID: ${{ vars.VITE_EMAILJS_CONTACT_TEMPLATE_ID }}
+          VITE_EMAILJS_NEWSLETTER_TEMPLATE_ID: ${{ vars.VITE_EMAILJS_NEWSLETTER_TEMPLATE_ID }}
+          VITE_EMAILJS_PUBLIC_KEY: ${{ vars.VITE_EMAILJS_PUBLIC_KEY }}
+          VITE_WEBHOOK_URL: ${{ vars.VITE_WEBHOOK_URL }}
+
+      # GitHub Pages has no SPA rewrites: serve the app for unknown paths too,
+      # so refreshing /webros-website/about (or opening a shared link) works.
+      - run: cp dist/index.html dist/404.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
