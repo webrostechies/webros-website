@@ -1,0 +1,61 @@
+/**
+ * Global site configuration — single source of truth for brand,
+ * contact details, navigation and social profiles.
+ */
+
+/** One entry per market. `e164` is the number with country code and no spaces. */
+const phones = [
+  { id: 'in', region: 'India', display: '+91 96337 27753', e164: '+919633727753' },
+  { id: 'ae', region: 'UAE', display: '+971 50 694 7011', e164: '+971506947011' },
+].map((p) => ({ ...p, href: `tel:${p.e164}` }))
+
+// WhatsApp goes to the India number
+const whatsappE164 = phones[0].e164
+
+export const siteConfig = {
+  name: 'WEBROS Techies',
+  shortName: 'WEBROS',
+  tagline: 'We don’t just code, we create experiences.',
+  description:
+    'WEBROS Techies is a founder-led web agency serving clients across India & the UAE. We design and engineer fast, custom websites, web applications and UI/UX — built to perform and rank.',
+  // Used for canonical + og:url. Falls back to the current origin at runtime.
+  url: import.meta.env.VITE_SITE_URL || '',
+  ogImage: '/og-image.jpg',
+  locale: 'en_IN',
+
+  contact: {
+    email: 'webrostechies365@gmail.com',
+    phones,
+    whatsappHref: `https://wa.me/${whatsappE164.replace('+', '')}`,
+    city: 'India & UAE',
+    responseTime: 'We reply within 2 business days.',
+  },
+
+  nav: [
+    { label: 'Home', to: '/' },
+    { label: 'Services', to: '/services' },
+    { label: 'Work', to: '/portfolio' },
+    { label: 'About', to: '/about' },
+    { label: 'Contact', to: '/contact' },
+  ],
+
+  /**
+   * Social profiles. Leave `url` empty to hide an icon — no dead "#" links
+   * ever ship. Add your real profile URLs here when ready.
+   */
+  social: [
+    { id: 'linkedin', label: 'LinkedIn', url: 'https://www.linkedin.com/company/webros-techies/' },
+    { id: 'instagram', label: 'Instagram', url: 'https://www.instagram.com/webros365/' },
+    { id: 'github', label: 'GitHub', url: '' },
+    { id: 'x', label: 'X (Twitter)', url: '' },
+  ],
+}
+
+/** Social links that actually have a destination, plus always-real contact channels. */
+export function getActiveSocials() {
+  return [
+    ...siteConfig.social.filter((s) => Boolean(s.url)),
+    { id: 'whatsapp', label: 'WhatsApp', url: siteConfig.contact.whatsappHref },
+    { id: 'email', label: 'Email', url: `mailto:${siteConfig.contact.email}` },
+  ]
+}
