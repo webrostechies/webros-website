@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { motion, useMotionTemplate, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { useReducedMotion } from '../../hooks/useReducedMotion'
+import { toneFor } from './founderTones'
 
 const EASE = [0.16, 1, 0.3, 1]
 const SPRING = { stiffness: 200, damping: 20, mass: 0.6 }
@@ -75,22 +76,29 @@ export default function FounderPortrait({ founder, index = 0, tilt = true, overl
         />
       )}
 
-      {/* Brand-tinted edge light that fades in on hover */}
+      {/* Edge light in the founder's accent colour, fades in on hover */}
       <div
         aria-hidden="true"
-        className={`pointer-events-none absolute inset-0 ${rounded} opacity-0 ring-1 ring-brand-400/40 ring-inset transition-opacity duration-500 group-hover/portrait:opacity-100`}
+        className={`pointer-events-none absolute inset-0 ${rounded} opacity-0 ring-1 ${toneFor(founder).ring} ring-inset transition-opacity duration-500 group-hover/portrait:opacity-100`}
       />
 
-      {overlay && founder.focus?.length > 0 && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden translate-y-full bg-linear-to-t from-ink-950/95 via-ink-950/70 to-transparent px-3 pt-10 pb-3 transition-transform duration-500 ease-out-expo group-hover/portrait:translate-y-0 sm:block">
-          <ul className="flex flex-wrap gap-1.5">
-            {founder.focus.map((f) => (
-              <li key={f} className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] text-fog-100 backdrop-blur">
-                {f}
-              </li>
-            ))}
-          </ul>
-        </div>
+      {/* Per-founder hover: a glow in their colour rises from the bottom edge
+          and their area icon pops into the corner. Nothing covers the face. */}
+      {overlay && (
+        <>
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t ${toneFor(founder).glow} to-transparent opacity-0 transition-opacity duration-500 group-hover/portrait:opacity-100`}
+          />
+          {founder.icon && (
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none absolute right-2 bottom-2 grid size-8 scale-50 place-items-center rounded-full opacity-0 ring-1 backdrop-blur-md transition duration-500 ease-out-expo group-hover/portrait:scale-100 group-hover/portrait:opacity-100 sm:right-3 sm:bottom-3 sm:size-10 ${toneFor(founder).badge}`}
+            >
+              <founder.icon className="size-4 sm:size-5" />
+            </span>
+          )}
+        </>
       )}
     </motion.div>
   )

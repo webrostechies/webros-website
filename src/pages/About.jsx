@@ -1,8 +1,10 @@
-import { Sparkles } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Check, Sparkles } from 'lucide-react'
 import Seo from '../components/ui/Seo'
 import Reveal from '../components/ui/Reveal'
 import Card from '../components/ui/Card'
-import Badge from '../components/ui/Badge'
+import { toneFor } from '../components/ui/founderTones'
+import { useReducedMotion } from '../hooks/useReducedMotion'
 import SectionHeading from '../components/ui/SectionHeading'
 import SocialLinks from '../components/ui/SocialLinks'
 import PageHero from '../components/ui/PageHero'
@@ -12,6 +14,72 @@ import { founders } from '../data/founders'
 import { processSteps, values } from '../data/process'
 
 const profileLabels = { linkedin: 'LinkedIn', github: 'GitHub', instagram: 'Instagram', x: 'X (Twitter)' }
+const EASE = [0.16, 1, 0.3, 1]
+
+/**
+ * Founder card. Motion runs in sequence once the card scrolls into view:
+ * card fades up → photo curtain-reveals → role chip pops in → each
+ * responsibility slides in with its tick springing up.
+ */
+function FounderCard({ founder: f, index }) {
+  const reduced = useReducedMotion()
+  const tone = toneFor(f)
+  const start = 0.45 + index * 0.15
+  const inView = { once: true, margin: '0px 0px -8% 0px' }
+  const profiles = Object.entries(f.links)
+    .filter(([, url]) => url)
+    .map(([id, url]) => ({ id, url, label: `${f.name} on ${profileLabels[id] ?? id}` }))
+
+  return (
+    <Reveal as="li" delay={index * 0.1}>
+      <Card as="article" className="h-full">
+        <div className="p-3 pb-0">
+          <FounderPortrait founder={f} index={index} alt={`Portrait of ${f.name}`} rounded="rounded-2xl" />
+        </div>
+        <div className="p-6">
+          <h3 className="text-xl font-semibold">{f.name}</h3>
+          <motion.p
+            initial={reduced ? false : { opacity: 0, y: 8, scale: 0.95 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={inView}
+            transition={{ delay: start, duration: 0.6, ease: EASE }}
+            className={`mt-3 inline-block rounded-xl px-3 py-1.5 text-xs leading-snug font-medium ring-1 ${tone.chip}`}
+          >
+            {f.role}
+          </motion.p>
+          <p className="mt-4 text-fog-400">{f.bio}</p>
+
+          <h4 className="mt-6 text-xs font-semibold tracking-wider text-fog-500 uppercase">Responsible for</h4>
+          <ul className="mt-3 space-y-2.5">
+            {f.responsibilities.map((r, j) => (
+              <motion.li
+                key={r}
+                initial={reduced ? false : { opacity: 0, x: -12 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={inView}
+                transition={{ delay: start + 0.15 + j * 0.07, duration: 0.5, ease: EASE }}
+                className="group/item flex items-center gap-3 text-fog-300"
+              >
+                <motion.span
+                  initial={reduced ? false : { scale: 0 }}
+                  whileInView={{ scale: 1 }}
+                  viewport={inView}
+                  transition={{ type: 'spring', stiffness: 420, damping: 16, delay: start + 0.25 + j * 0.07 }}
+                  className={`grid size-5 shrink-0 place-items-center rounded-full ring-1 ${tone.chip}`}
+                >
+                  <Check size={12} strokeWidth={3} aria-hidden="true" />
+                </motion.span>
+                <span className="transition-transform duration-300 ease-out-expo group-hover/item:translate-x-1">{r}</span>
+              </motion.li>
+            ))}
+          </ul>
+
+          {profiles.length > 0 && <SocialLinks className="mt-6" links={profiles} />}
+        </div>
+      </Card>
+    </Reveal>
+  )
+}
 
 export default function About() {
   return (
@@ -49,8 +117,8 @@ export default function About() {
             after.
           </p>
           <p>
-            Because we are a small, founder-led team, you work directly with the people writing your code. No
-            account managers, no lost-in-translation briefs — just clear communication and work we’re proud to
+            Because we are a small, founder-led team, the people you talk to are the people running your project.
+            No account managers, no lost-in-translation briefs — just clear communication and work we’re proud to
             sign.
           </p>
         </Reveal>
@@ -79,34 +147,12 @@ export default function About() {
         <div className="container-page">
           <SectionHeading
             eyebrow="The founders"
-            title={<span id="team-title">The people behind every pixel and every line of code.</span>}
+            title={<span id="team-title">Three founders, three clear roles.</span>}
           />
           <ul className="mt-14 grid gap-6 md:grid-cols-3">
-            {founders.map((f, i) => {
-              const profiles = Object.entries(f.links)
-                .filter(([, url]) => url)
-                .map(([id, url]) => ({ id, url, label: `${f.name} on ${profileLabels[id] ?? id}` }))
-              return (
-                <Reveal as="li" key={f.id} delay={i * 0.1}>
-                  <Card as="article" className="h-full">
-                    <div className="p-3 pb-0">
-                      <FounderPortrait founder={f} index={i} alt={`Portrait of ${f.name}`} rounded="rounded-2xl" />
-                    </div>
-                    <div className="p-6">
-                      <h3 className="text-xl font-semibold">{f.name}</h3>
-                      <p className="text-sm text-brand-300">{f.role}</p>
-                      <p className="mt-4 text-fog-400">{f.bio}</p>
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        {f.focus.map((x) => (
-                          <Badge key={x}>{x}</Badge>
-                        ))}
-                      </div>
-                      {profiles.length > 0 && <SocialLinks className="mt-5" links={profiles} />}
-                    </div>
-                  </Card>
-                </Reveal>
-              )
-            })}
+            {founders.map((f, i) => (
+              <FounderCard key={f.id} founder={f} index={i} />
+            ))}
           </ul>
         </div>
       </section>

@@ -11,7 +11,7 @@
  *   { id: 'projects', value: '12', label: 'Client projects shipped' }
  */
 export const promises = [
-  { id: 'direct', value: 'Direct', label: 'You work with the founders who build it' },
+  { id: 'direct', value: 'Direct', label: 'You deal with the founders, not account managers' },
   { id: 'quote', value: 'Upfront', label: 'Written scope and quote before work starts' },
   { id: 'ownership', value: '100%', label: 'Code and design ownership, yours' },
   { id: 'local', value: 'IN · UAE', label: 'Local phone numbers in both markets' },

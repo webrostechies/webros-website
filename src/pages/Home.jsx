@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { ArrowRight, ArrowUpRight, MapPin } from 'lucide-react'
 import FounderPortrait from '../components/ui/FounderPortrait'
+import { toneFor } from '../components/ui/founderTones'
 import Seo from '../components/ui/Seo'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -245,7 +246,7 @@ function FoundersStrip() {
           <SectionHeading
             eyebrow="Nice to meet you"
             title={<span id="team-title">Three founders. Zero middlemen.</span>}
-            intro="When you work with WEBROS, you talk directly to the people designing and building your product."
+            intro="When you work with WEBROS, you deal directly with the three founders: one leads the technology, one runs your project, and one grows the brand."
           />
           <Reveal className="mt-8">
             <Button to="/about" variant="secondary">
@@ -283,10 +284,10 @@ function FounderTile({ founder, index, progress }) {
           viewport={{ once: true }}
           transition={{ duration: 0.7, delay: 0.5 + index * 0.15, ease: [0.16, 1, 0.3, 1] }}
         >
-          <p className="mt-3 text-sm font-semibold text-fog-100 transition-colors group-hover:text-brand-300 sm:text-base">
+          <p className={`mt-3 text-sm font-semibold text-fog-100 transition-colors ${toneFor(founder).hoverText} sm:text-base`}>
             {founder.name}
           </p>
-          <p className="text-xs text-fog-500 sm:text-sm">{founder.role}</p>
+          <p className="text-xs text-fog-500 sm:text-sm">{founder.shortRole ?? founder.role}</p>
         </motion.div>
       </Link>
     </motion.li>

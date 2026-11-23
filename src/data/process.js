@@ -46,8 +46,8 @@ export const values = [
     text: 'Speed, accessibility and SEO are built in from the first commit — not bolted on before launch.',
   },
   {
-    title: 'Talk to the builders',
-    text: 'No account managers in between. You work directly with the founders who design and write your code.',
+    title: 'Talk to the founders',
+    text: 'No account managers in between. Your project is planned, built and delivered by the founders themselves.',
   },
   {
     title: 'Built to grow',
