@@ -1,18 +1,19 @@
+import { useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, useScroll, useTransform } from 'framer-motion'
 import { ArrowRight, ArrowUpRight, MapPin } from 'lucide-react'
+import FounderPortrait from '../components/ui/FounderPortrait'
 import Seo from '../components/ui/Seo'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Reveal from '../components/ui/Reveal'
 import SectionHeading from '../components/ui/SectionHeading'
-import AnimatedCounter from '../components/ui/AnimatedCounter'
 import HeroBackdrop from '../components/graphics/HeroBackdrop'
 import DeviceShowcase from '../components/graphics/DeviceShowcase'
 import ProjectCard from '../components/ui/ProjectCard'
 import CtaBand from '../components/ui/CtaBand'
 import { services } from '../data/services'
-import { metrics } from '../data/metrics'
+import { promises } from '../data/metrics'
 import { processSteps } from '../data/process'
 import { founders } from '../data/founders'
 import { featuredProjects } from '../data/projects'
@@ -107,7 +108,7 @@ function Marquee() {
   return (
     <section aria-label="Technologies we work with" className="border-y hairline bg-ink-900/40 py-6">
       <div className="flex overflow-hidden mask-[linear-gradient(90deg,transparent,black_12%,black_88%,transparent)]">
-        <ul className="flex shrink-0 animate-marquee items-center gap-12 pr-12 hover:paused">
+        <ul className="marquee-always flex shrink-0 animate-marquee items-center gap-12 pr-12 hover:[animation-play-state:paused]">
           {row.map((c, i) => (
             <li key={i} aria-hidden={i >= capabilities.length} className="font-display text-lg whitespace-nowrap text-fog-500">
               {c}
@@ -161,17 +162,18 @@ function ServicesPreview() {
   )
 }
 
-function MetricsBand() {
+function PromisesBand() {
   return (
-    <section aria-label="WEBROS Techies in numbers" className="container-page">
-      <Reveal className="glass grid grid-cols-2 gap-y-10 rounded-3xl px-6 py-12 lg:grid-cols-4">
-        {metrics.map((m, i) => (
-          <div key={m.id} className={`text-center ${i > 0 ? 'lg:border-l hairline' : ''}`}>
-            <p className="font-display text-5xl font-bold text-fog-100 sm:text-6xl">
-              <AnimatedCounter value={m.value} suffix={m.suffix} />
-            </p>
-            <p className="mt-2 text-sm text-fog-400">{m.label}</p>
-          </div>
+    <section aria-labelledby="promises-title" className="container-page">
+      <h2 id="promises-title" className="sr-only">
+        What you can count on
+      </h2>
+      <Reveal as="ul" className="glass grid grid-cols-2 gap-x-4 gap-y-10 rounded-3xl px-6 py-12 lg:grid-cols-4">
+        {promises.map((p, i) => (
+          <li key={p.id} className={`text-center ${i > 0 ? 'lg:border-l hairline' : ''}`}>
+            <p className="font-display text-4xl font-bold text-fog-100 sm:text-5xl">{p.value}</p>
+            <p className="mx-auto mt-2 max-w-[16rem] text-sm text-fog-400">{p.label}</p>
+          </li>
         ))}
       </Reveal>
     </section>
@@ -234,6 +236,8 @@ function FeaturedWork() {
 }
 
 function FoundersStrip() {
+  const listRef = useRef(null)
+  const { scrollYProgress } = useScroll({ target: listRef, offset: ['start end', 'end start'] })
   return (
     <section className="section-pad pt-0" aria-labelledby="team-title">
       <div className="container-page grid items-center gap-12 lg:grid-cols-[1fr_1.4fr]">
@@ -249,29 +253,43 @@ function FoundersStrip() {
             </Button>
           </Reveal>
         </div>
-        <ul className="grid grid-cols-3 gap-3 sm:gap-5">
+        <ul ref={listRef} className="grid grid-cols-3 gap-3 sm:gap-5">
           {founders.map((f, i) => (
-            <Reveal as="li" key={f.id} delay={i * 0.1} className={i === 1 ? 'mt-10' : ''}>
-              <Link to="/about#team" className="group block">
-                <div className="overflow-hidden rounded-2xl border hairline sm:rounded-3xl">
-                  <img
-                    src={f.photo}
-                    alt={`${f.name}, ${f.role}`}
-                    width="720"
-                    height="900"
-                    loading="lazy"
-                    decoding="async"
-                    className="aspect-4/5 w-full object-cover grayscale-[35%] transition duration-700 ease-out-expo group-hover:scale-105 group-hover:grayscale-0"
-                  />
-                </div>
-                <p className="mt-3 text-sm font-semibold text-fog-100 sm:text-base">{f.name}</p>
-                <p className="text-xs text-fog-500 sm:text-sm">{f.role}</p>
-              </Link>
-            </Reveal>
+            <FounderTile key={f.id} founder={f} index={i} progress={scrollYProgress} />
           ))}
         </ul>
       </div>
     </section>
+  )
+}
+
+// Outer columns drift up, the middle one drifts down, as the section scrolls past
+const PARALLAX = [
+  [30, -30],
+  [-20, 50],
+  [40, -40],
+]
+
+function FounderTile({ founder, index, progress }) {
+  const reduced = useReducedMotion()
+  const y = useTransform(progress, [0, 1], PARALLAX[index % PARALLAX.length])
+  return (
+    <motion.li style={reduced ? undefined : { y }} className={index === 1 ? 'mt-10' : ''}>
+      <Link to="/about#team" className="group block rounded-2xl sm:rounded-3xl">
+        <FounderPortrait founder={founder} index={index} overlay />
+        <motion.div
+          initial={reduced ? false : { opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.5 + index * 0.15, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <p className="mt-3 text-sm font-semibold text-fog-100 transition-colors group-hover:text-brand-300 sm:text-base">
+            {founder.name}
+          </p>
+          <p className="text-xs text-fog-500 sm:text-sm">{founder.role}</p>
+        </motion.div>
+      </Link>
+    </motion.li>
   )
 }
 
@@ -282,7 +300,7 @@ export default function Home() {
       <Hero />
       <Marquee />
       <ServicesPreview />
-      <MetricsBand />
+      <PromisesBand />
       <Process />
       <FeaturedWork />
       <FoundersStrip />

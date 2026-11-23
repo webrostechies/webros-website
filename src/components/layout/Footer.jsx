@@ -70,9 +70,15 @@ export default function Footer() {
             <a href={`mailto:${contact.email}`} className="inline-flex items-center gap-2 hover:text-brand-300">
               <Mail size={14} aria-hidden="true" /> {contact.email}
             </a>
-            <a href={contact.phoneHref} className="inline-flex items-center gap-2 hover:text-brand-300">
-              <Phone size={14} aria-hidden="true" /> {contact.phoneDisplay}
-            </a>
+            {contact.phones.map((p) => (
+              <a key={p.id} href={p.href} className="inline-flex items-center gap-2 hover:text-brand-300">
+                <Phone size={14} aria-hidden="true" />
+                <span>
+                  <span className="sr-only">{p.region}: </span>
+                  {p.display}
+                </span>
+              </a>
+            ))}
           </address>
           <div className="flex items-center gap-4">
             <p>

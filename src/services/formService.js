@@ -23,6 +23,19 @@ export class FormServiceError extends Error {
 
 export const isFormServiceConfigured = () => Boolean(provider)
 
+/**
+ * File attachments on the contact form.
+ * - formspree / web3forms: sent as multipart uploads (both need a paid plan for files).
+ * - webhook: sent as base64 inside the JSON body (free, e.g. Apps Script → MailApp).
+ * - emailjs: not supported (free tier caps attachments at 50 KB).
+ * Off unless VITE_FORM_ATTACHMENTS=true, so the field never appears for a provider
+ * plan that would silently drop the file. Always on for dev simulation.
+ */
+const ATTACHMENT_PROVIDERS = ['formspree', 'web3forms', 'webhook']
+export const supportsAttachments = provider
+  ? ATTACHMENT_PROVIDERS.includes(provider) && env.VITE_FORM_ATTACHMENTS === 'true'
+  : Boolean(env.DEV)
+
 // ── Spam protection ─────────────────────────────────────────────────────────
 const MIN_FILL_MS = 2500
 const THROTTLE_MS = 30_000
@@ -55,14 +68,36 @@ function markSent(kind) {
 }
 
 // ── Providers ──────────────────────────────────────────────────────────────
-async function postJson(url, body, headers = {}) {
+function postJson(url, body) {
+  return request(url, {
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+/** Multipart POST with the file under `attachment` (browser sets the boundary header). */
+function postMultipart(url, fields, file) {
+  const form = new FormData()
+  Object.entries(fields).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') form.append(k, String(v))
+  })
+  form.append('attachment', file, file.name)
+  return request(url, { headers: { Accept: 'application/json' }, body: form })
+}
+
+function readAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
+    reader.onerror = () => reject(new FormServiceError('rejected', 'We couldn’t read that file. Try attaching it again.'))
+    reader.readAsDataURL(file)
+  })
+}
+
+async function request(url, init) {
   let res
   try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...headers },
-      body: JSON.stringify(body),
-    })
+    res = await fetch(url, { method: 'POST', ...init })
   } catch {
     throw new FormServiceError('network', 'We couldn’t reach the server. Check your connection and try again.')
   }
@@ -85,22 +120,26 @@ const subjects = {
 }
 
 const senders = {
-  async formspree(kind, data) {
+  async formspree(kind, data, file) {
     const id = kind === 'contact' ? env.VITE_FORMSPREE_CONTACT_ID : env.VITE_FORMSPREE_NEWSLETTER_ID
     if (!id) throw new FormServiceError('not-configured', `Missing Formspree form ID for "${kind}".`)
-    await postJson(`https://formspree.io/f/${id}`, { ...data, _subject: subjects[kind](data) })
+    const url = `https://formspree.io/f/${id}`
+    const fields = { ...data, _subject: subjects[kind](data) }
+    await (file ? postMultipart(url, fields, file) : postJson(url, fields))
   },
 
-  async web3forms(kind, data) {
+  async web3forms(kind, data, file) {
     const key = env.VITE_WEB3FORMS_ACCESS_KEY
     if (!key) throw new FormServiceError('not-configured', 'Missing Web3Forms access key.')
-    const res = await postJson('https://api.web3forms.com/submit', {
+    const url = 'https://api.web3forms.com/submit'
+    const fields = {
       access_key: key,
       subject: subjects[kind](data),
       from_name: 'WEBROS Techies website',
       form: kind,
       ...data,
-    })
+    }
+    const res = await (file ? postMultipart(url, fields, file) : postJson(url, fields))
     const json = await res.json().catch(() => ({}))
     if (json && json.success === false) throw new FormServiceError('rejected', json.message || 'Submission rejected.')
   },
@@ -122,15 +161,25 @@ const senders = {
    * Generic webhook — e.g. a Google Apps Script web app.
    * Sent as text/plain to avoid a CORS preflight (Apps Script can't answer OPTIONS).
    */
-  async webhook(kind, data) {
+  async webhook(kind, data, file) {
     const url = env.VITE_WEBHOOK_URL
     if (!url) throw new FormServiceError('not-configured', 'Missing webhook URL.')
+    // Apps Script: Utilities.newBlob(Utilities.base64Decode(a.base64), a.type, a.name)
+    const attachment = file
+      ? { name: file.name, type: file.type || 'application/octet-stream', size: file.size, base64: await readAsBase64(file) }
+      : undefined
     try {
       await fetch(url, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ form: kind, subject: subjects[kind](data), submittedAt: new Date().toISOString(), ...data }),
+        body: JSON.stringify({
+          form: kind,
+          subject: subjects[kind](data),
+          submittedAt: new Date().toISOString(),
+          ...data,
+          attachment,
+        }),
       })
     } catch {
       throw new FormServiceError('network', 'We couldn’t reach the server. Check your connection and try again.')
@@ -139,13 +188,19 @@ const senders = {
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────
-async function submit(kind, data, meta) {
+async function submit(kind, data, meta, file = null) {
   assertHuman(kind, meta)
+  if (file && !supportsAttachments)
+    throw new FormServiceError('rejected', 'File uploads aren’t available right now. Please remove the file and email it to us instead.')
 
   const send = senders[provider]
   if (!send) {
     if (env.DEV) {
-      console.info(`[formService] No VITE_FORM_PROVIDER set — simulating "${kind}" submission:`, data)
+      console.info(
+        `[formService] No VITE_FORM_PROVIDER set — simulating "${kind}" submission:`,
+        data,
+        file ? { attachment: file.name, bytes: file.size } : '',
+      )
       await new Promise((r) => setTimeout(r, 900))
       markSent(kind)
       return { simulated: true }
@@ -153,10 +208,10 @@ async function submit(kind, data, meta) {
     throw new FormServiceError('not-configured', 'Online forms are not configured yet.')
   }
 
-  await send(kind, data)
+  await send(kind, data, file)
   markSent(kind)
   return { simulated: false }
 }
 
-export const sendContactMessage = (data, meta) => submit('contact', data, meta)
+export const sendContactMessage = (data, meta, file) => submit('contact', data, meta, file)
 export const subscribeToNewsletter = (data, meta) => submit('newsletter', data, meta)

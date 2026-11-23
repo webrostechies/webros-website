@@ -56,6 +56,32 @@ export const allProjects = [
     draft: false,
   },
 
+  {
+    id: 'shahin-weds-nehla',
+    title: 'Shahin & Nehla — Wedding Website',
+    client: 'Shahin & Nehla',
+    type: 'client',
+    year: 2026,
+    categories: ['websites', 'ui-ux'],
+    summary: 'A wedding website with the event schedule, venue map and online RSVP.',
+    problem:
+      'Guests needed one place to find the wedding schedule and the way to the venue, and the couple needed a simple way to collect RSVPs.',
+    solution:
+      'A lightweight, mobile-first website built in plain HTML, CSS and JavaScript: an event schedule, an embedded map to the venue, and an RSVP form so guests can confirm attendance. Hosted free on GitHub Pages.',
+    results: [
+      // Add real, measured numbers only, e.g. { value: '240', label: 'Guest RSVPs collected online' }
+      // or the Lighthouse score: { value: '98', label: 'Lighthouse performance score' }
+    ],
+    stack: ['HTML', 'CSS', 'JavaScript', 'GitHub Pages'],
+    liveUrl: 'https://webrostechies.github.io/ShahinwedsNehla/',
+    repoUrl: '',
+    embeddable: true,
+    // image: weddingScreenshot,  // add a screenshot in src/assets/projects/ to replace the generated mockup
+    accent: ['#f4a7b9', '#c9a227'],
+    featured: true,
+    draft: false,
+  },
+
   // ── SAMPLE ENTRIES (dev only) ─────────────────────────────────────────────
   // Until you have client work to show, turn these into REAL concept builds:
   // build a working demo, deploy it, set liveUrl + draft: false. Keep

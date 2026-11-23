@@ -6,6 +6,7 @@ import Badge from '../components/ui/Badge'
 import SectionHeading from '../components/ui/SectionHeading'
 import SocialLinks from '../components/ui/SocialLinks'
 import PageHero from '../components/ui/PageHero'
+import FounderPortrait from '../components/ui/FounderPortrait'
 import CtaBand from '../components/ui/CtaBand'
 import { founders } from '../data/founders'
 import { processSteps, values } from '../data/process'
@@ -88,16 +89,8 @@ export default function About() {
               return (
                 <Reveal as="li" key={f.id} delay={i * 0.1}>
                   <Card as="article" className="h-full">
-                    <div className="overflow-hidden">
-                      <img
-                        src={f.photo}
-                        alt={`Portrait of ${f.name}`}
-                        width="720"
-                        height="900"
-                        loading="lazy"
-                        decoding="async"
-                        className="aspect-4/5 w-full object-cover transition duration-700 ease-out-expo group-hover/card:scale-105"
-                      />
+                    <div className="p-3 pb-0">
+                      <FounderPortrait founder={f} index={i} alt={`Portrait of ${f.name}`} rounded="rounded-2xl" />
                     </div>
                     <div className="p-6">
                       <h3 className="text-xl font-semibold">{f.name}</h3>

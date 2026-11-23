@@ -8,7 +8,7 @@ export const processSteps = [
     title: 'Discover',
     summary: 'We learn your business, your users and what success looks like.',
     detail:
-      'A focused discovery call and workshop. You leave with a written scope, a fixed quote and a realistic timeline — before you commit to anything.',
+      'A focused discovery call and workshop. You leave with a written scope, a clear quote and a realistic timeline — before you commit to anything.',
   },
   {
     id: 'design',

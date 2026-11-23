@@ -5,13 +5,14 @@ import { CircleAlert, CircleCheck, Clock, LoaderCircle, Mail, MapPin, MessageCir
 import Seo from '../components/ui/Seo'
 import Card from '../components/ui/Card'
 import Field from '../components/ui/Field'
+import FileField from '../components/ui/FileField'
 import Button from '../components/ui/Button'
 import Reveal from '../components/ui/Reveal'
 import PageHero from '../components/ui/PageHero'
 import { services } from '../data/services'
 import { siteConfig } from '../data/siteConfig'
-import { sendContactMessage } from '../services/formService'
-import { validateContact } from '../services/validation'
+import { sendContactMessage, supportsAttachments } from '../services/formService'
+import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_MB, validateContact } from '../services/validation'
 import { useFormGuard } from '../hooks/useFormGuard'
 
 // Currency-neutral sizes — works for clients in both India and the UAE
@@ -25,21 +26,30 @@ const budgets = [
 
 const channels = [
   { icon: Mail, label: 'Email', value: siteConfig.contact.email, href: `mailto:${siteConfig.contact.email}` },
-  { icon: Phone, label: 'Call', value: siteConfig.contact.phoneDisplay, href: siteConfig.contact.phoneHref },
+  ...siteConfig.contact.phones.map((p) => ({ icon: Phone, label: `Call · ${p.region}`, value: p.display, href: p.href })),
   { icon: MessageCircle, label: 'WhatsApp', value: 'Message us directly', href: siteConfig.contact.whatsappHref },
   { icon: MapPin, label: 'Serving', value: siteConfig.contact.city },
 ]
 
 const nextSteps = [
-  'We read your message and reply within one business day.',
-  'A free 30-minute discovery call to understand your goals.',
-  'You receive a written scope, timeline and fixed quote.',
+  'We read your message and reply within 2 business days.',
+  'A short call to understand your goals and answer your questions.',
+  'You receive a written scope, timeline and quote.',
 ]
 
 function ContactForm() {
   const [params] = useSearchParams()
   const preselected = services.some((s) => s.id === params.get('service')) ? params.get('service') : ''
-  const empty = { name: '', email: '', phone: '', company: '', service: preselected, budget: budgets[0], message: '' }
+  const empty = {
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    service: preselected,
+    budget: budgets[0],
+    message: '',
+    attachment: null,
+  }
 
   const [values, setValues] = useState(empty)
   const [errors, setErrors] = useState({})
@@ -57,12 +67,19 @@ function ContactForm() {
     setTouched((t) => ({ ...t, [field]: true }))
     setErrors(validateContact(values))
   }
+  // Files are checked as soon as they're picked, so a wrong type or size shows straight away
+  const setAttachment = (file) => {
+    const next = { ...values, attachment: file }
+    setValues(next)
+    setTouched((t) => ({ ...t, attachment: true }))
+    setErrors(validateContact(next))
+  }
 
   async function onSubmit(e) {
     e.preventDefault()
     const found = validateContact(values)
     setErrors(found)
-    setTouched({ name: true, email: true, phone: true, service: true, message: true })
+    setTouched({ name: true, email: true, phone: true, service: true, message: true, attachment: true })
     if (Object.keys(found).length) {
       // Move focus to the first invalid field
       const first = e.currentTarget.querySelector('[aria-invalid="true"]')
@@ -86,6 +103,7 @@ function ContactForm() {
           page: window.location.href,
         },
         guard.getMeta(),
+        values.attachment,
       )
       setStatus('success')
     } catch (err) {
@@ -126,7 +144,7 @@ function ContactForm() {
           <h2 className="mt-8 text-headline font-semibold">Message received!</h2>
           <p className="mt-4 max-w-md text-lg text-fog-400">
             Thanks, {values.name.split(' ')[0]}. We’ll get back to you at <span className="text-fog-100">{values.email}</span>{' '}
-            within one business day.
+            within 2 business days.
           </p>
           <Button variant="secondary" className="mt-8" onClick={reset}>
             Send another message
@@ -184,6 +202,26 @@ function ContactForm() {
             hint={`${values.message.trim().length}/3000`}
           />
 
+          {supportsAttachments ? (
+            <FileField
+              className="sm:col-span-2"
+              label="Attach a brief or document (optional)"
+              hint={`PDF, Word, PowerPoint, Excel, text or image · up to ${ATTACHMENT_MAX_MB} MB`}
+              accept={ATTACHMENT_EXTENSIONS.join(',')}
+              file={values.attachment}
+              onChange={setAttachment}
+              error={err('attachment')}
+            />
+          ) : (
+            <p className="-mt-1 text-sm text-fog-500 sm:col-span-2">
+              Have a brief, RFP or design file? Email it to{' '}
+              <a className="text-fog-300 underline underline-offset-2 hover:text-brand-300" href={`mailto:${siteConfig.contact.email}`}>
+                {siteConfig.contact.email}
+              </a>{' '}
+              after sending this form.
+            </p>
+          )}
+
           {/* Honeypot */}
           <div className="hp-field" aria-hidden="true">
             <label>
@@ -238,7 +276,7 @@ export default function Contact() {
     <>
       <Seo
         title="Contact"
-        description="Start a project with WEBROS Techies. Tell us about your website, web app, UI/UX or SEO needs — we reply within one business day."
+        description="Start a project with WEBROS Techies. Tell us about your website, web app, UI/UX or SEO needs — we reply within 2 business days."
       />
       <PageHero
         eyebrow="Contact"

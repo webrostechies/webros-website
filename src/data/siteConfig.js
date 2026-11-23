@@ -3,7 +3,14 @@
  * contact details, navigation and social profiles.
  */
 
-const phoneE164 = '+919633727753'
+/** One entry per market. `e164` is the number with country code and no spaces. */
+const phones = [
+  { id: 'in', region: 'India', display: '+91 96337 27753', e164: '+919633727753' },
+  { id: 'ae', region: 'UAE', display: '+971 50 694 7011', e164: '+971506947011' },
+].map((p) => ({ ...p, href: `tel:${p.e164}` }))
+
+// WhatsApp goes to the India number
+const whatsappE164 = phones[0].e164
 
 export const siteConfig = {
   name: 'WEBROS Techies',
@@ -18,11 +25,10 @@ export const siteConfig = {
 
   contact: {
     email: 'webrostechies365@gmail.com',
-    phoneDisplay: '+91 96337 27753',
-    phoneHref: `tel:${phoneE164}`,
-    whatsappHref: `https://wa.me/${phoneE164.replace('+', '')}`,
+    phones,
+    whatsappHref: `https://wa.me/${whatsappE164.replace('+', '')}`,
     city: 'India & UAE',
-    responseTime: 'We reply within one business day.',
+    responseTime: 'We reply within 2 business days.',
   },
 
   nav: [
@@ -38,8 +44,8 @@ export const siteConfig = {
    * ever ship. Add your real profile URLs here when ready.
    */
   social: [
-    { id: 'linkedin', label: 'LinkedIn', url: '' },
-    { id: 'instagram', label: 'Instagram', url: '' },
+    { id: 'linkedin', label: 'LinkedIn', url: 'https://www.linkedin.com/company/webros-techies/' },
+    { id: 'instagram', label: 'Instagram', url: 'https://www.instagram.com/webros365/' },
     { id: 'github', label: 'GitHub', url: '' },
     { id: 'x', label: 'X (Twitter)', url: '' },
   ],
